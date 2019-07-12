@@ -20,11 +20,12 @@ android 模拟器 mac android sdk 自带的 emulator(API28 android9)可用,其�
 
 - [ijkplayer](#ijkplayer)
   - [目录](#%E7%9B%AE%E5%BD%95)
-  - [English Readme](#english-readme)
+  - [English Readme](#English-Readme)
   - [安装](#%E5%AE%89%E8%A3%85)
   - [原生部分说明](#%E5%8E%9F%E7%94%9F%E9%83%A8%E5%88%86%E8%AF%B4%E6%98%8E)
-    - [iOS](#ios)
-    - [Android](#android)
+    - [自定义编译和原生部分源码](#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BC%96%E8%AF%91%E5%92%8C%E5%8E%9F%E7%94%9F%E9%83%A8%E5%88%86%E6%BA%90%E7%A0%81)
+    - [iOS](#iOS)
+    - [Android](#Android)
   - [入门示例](#%E5%85%A5%E9%97%A8%E7%A4%BA%E4%BE%8B)
   - [使用](#%E4%BD%BF%E7%94%A8)
     - [设置](#%E8%AE%BE%E7%BD%AE)
@@ -35,15 +36,16 @@ android 模拟器 mac android sdk 自带的 emulator(API28 android9)可用,其�
       - [获取播放信息](#%E8%8E%B7%E5%8F%96%E6%92%AD%E6%94%BE%E4%BF%A1%E6%81%AF)
       - [截取视频帧](#%E6%88%AA%E5%8F%96%E8%A7%86%E9%A2%91%E5%B8%A7)
       - [资源监听](#%E8%B5%84%E6%BA%90%E7%9B%91%E5%90%AC)
-      - [IjkStatus 说明](#ijkstatus-%E8%AF%B4%E6%98%8E)
-      - [自定义 Option](#%E8%87%AA%E5%AE%9A%E4%B9%89-option)
-        - [IjkOptionCategory](#ijkoptioncategory)
+      - [倍速播放](#%E5%80%8D%E9%80%9F%E6%92%AD%E6%94%BE)
+      - [IjkStatus 说明](#IjkStatus-%E8%AF%B4%E6%98%8E)
+      - [自定义 Option](#%E8%87%AA%E5%AE%9A%E4%B9%89-Option)
+        - [IjkOptionCategory](#IjkOptionCategory)
       - [释放资源](#%E9%87%8A%E6%94%BE%E8%B5%84%E6%BA%90)
-    - [自定义控制器 UI](#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A7%E5%88%B6%E5%99%A8-ui)
+    - [自定义控制器 UI](#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8E%A7%E5%88%B6%E5%99%A8-UI)
     - [自定义纹理界面](#%E8%87%AA%E5%AE%9A%E4%B9%89%E7%BA%B9%E7%90%86%E7%95%8C%E9%9D%A2)
     - [根据当前状态构建一个 widget](#%E6%A0%B9%E6%8D%AE%E5%BD%93%E5%89%8D%E7%8A%B6%E6%80%81%E6%9E%84%E5%BB%BA%E4%B8%80%E4%B8%AA-widget)
   - [进度](#%E8%BF%9B%E5%BA%A6)
-  - [LICENSE](#license)
+  - [LICENSE](#LICENSE)
 
 ## English Readme
 
@@ -64,23 +66,28 @@ dependencies:
 
 ## 原生部分说明
 
-编译规则可以参考[这个](https://gitee.com/kikt/ijkplayer_thrid_party/blob/master/config/module.sh),如果你有自己的特定需求,可以修改编译选项,这个参考 [bilibili/ijkplayer](https://github.com/bilibili/ijkplayer) 或 [ffmpeg](http://ffmpeg.org/)
+### 自定义编译和原生部分源码
 
-自定义编译选项可以看[这里](https://github.com/CaiJingLong/flutter_ijkplayer/blob/master/compile-cn.md)
+自定义编译的主要目的是修改支持的格式, 因为默认包含了一些编解码器,解复用,协议等等, 这些格式可能你的项目用不到, 这时候可以修改 ffmpeg 的自定义编译选项, 以便于可以缩小库文件的体积, 以达到给 app 瘦身的目的
+
+[当前的编译规则文件](https://gitee.com/kikt/ijkplayer_thrid_party/blob/master/config/module.sh),修改编译选项,这个参考 [bilibili/ijkplayer](https://github.com/bilibili/ijkplayer) 或 [ffmpeg](http://ffmpeg.org/),ffmpeg 的相关信息也可以通过搜索引擎获取
+
+自定义编译选项的完整过程请看[文档](https://github.com/CaiJingLong/flutter_ijkplayer/blob/master/compile-cn.md), 否则不保证编译出来的代码不报错, 具体的更改方案也请查看编译文档, 本篇不再提及
 
 ### iOS
 
-因为 iOS 部分代码的库文件比较大,所以创建了一个 pod 依赖托管 iOS 的 ijkplayer 库  
-pod 库托管在 github 仓库内 https://github.com/CaiJingLong/flutter_ijkplayer_pod  
-没有采用通用的 tar.gz 或 zip,而是使用 tar.xz 的方式压缩,这个压缩格式压缩率高,但是压缩和解压缩的的速度慢,综合考虑使用高压缩率的方式  
+因为 iOS 部分代码的库文件比较大,为了方便管理版本, 所以创建了一个 pod 依赖托管 iOS 的 ijkplayer 库  
+pod 库托管在 github 仓库内 https://github.com/CaiJingLong/flutter_ijkplayer_pod
+
+因为 framework 文件的大小超过了 100M,所以采用了压缩的方式储存
+没有采用通用的 tar.gz 或 zip,而是使用 tar.xz 的方式压缩,这个压缩格式压缩率高,但是压缩和解压缩的的速度慢,综合考虑使用高压缩率的方式来快速获取源文件并解压缩  
 如果有朋友愿意提供 cdn 加速,可以联系我 😁
 
-iOS 的代码来自于 https://github.com/jadennn/flutter_ijk 中的 iOS 代码
-在这基础上增加了旋转通知
+iOS 的代码来自于 https://github.com/jadennn/flutter_ijk 中的 iOS 代码, 但在这基础上增加了旋转通知, 具体的源码[在这里](https://gitee.com/kikt/ijkplayer_thrid_party)
 
 ### Android
 
-现在使用 [GSYVideoPlayer](https://github.com/CarGuo/GSYVideoPlayer)中的 ex-so 的规则, 但源码经过修改(截取视频帧),编译而成
+现在的 ffmpeg 编译基本是参考的 [GSYVideoPlayer](https://github.com/CarGuo/GSYVideoPlayer)中的 ex-so 的规则, 但当前项目的 c 语言源码有修改(截取视频帧), 所以你**不能**直接拿别的项目的 so 文件来用, 修改的内容可以在[gitee](https://gitee.com/kikt/ijkplayer_thrid_party)查到
 
 ## 入门示例
 
@@ -190,6 +197,9 @@ controller.dispose();
 // 网络
 await controller.setNetworkDataSource("https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_20mb.mp4");
 
+// 设置请求头, 使用headers参数
+await controller.setNetworkDataSource(url, headers: <String,String>{});
+
 // 应用内资源
 await controller.setAssetDataSource("assets/test.mp4");
 
@@ -198,7 +208,7 @@ await controller.setFileDataSource(File("/sdcard/1.mp4"));
 
 // 通过数据源的方式
 var dataSource = DataSource.file(File("/sdcard/1.mp4"));
-var dataSource = DataSource.network("https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_20mb.mp4");
+var dataSource = DataSource.network("https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_20mb.mp4", headers:<String,String>{});
 var dataSource = DataSource.asset("assets/test.mp4");
 await controller.setDataSource(dataSource);
 
@@ -261,6 +271,9 @@ var provider = MemoryImage(uint8List);
 Widget image = Image(image:provider);
 ```
 
+这个和显示中的视频不总完全一样, 这个是因为截取的是解码后的完整视频帧, 可能比当前播放的**略快 1~2 帧**.
+如果你不能接受这种不同步,请不要使用这个功能,或提交可行的 PR
+
 #### 资源监听
 
 使用 stream 的形式向外广播一些信息的变化,原则上以 stream 结尾的属性都是可监听的
@@ -280,6 +293,23 @@ Stream<bool> volumeStream = controller.playingStream;
 
 // 当前Controller状态的监听,取值范围可以查看
 Stream<IjkStatus> ijkStatusStream = controller.ijkStatusStream;
+```
+
+#### 倍速播放
+
+调用代码:
+
+```dart
+controller.setSpeed(2.0);
+```
+
+支持的倍率默认为 1.0, 上限不明,下限请不要小于等于 0,否则可能会 crash
+
+变调的问题:
+由于变速变调的问题, 如果需要不变调, 需要一个 option 的支持, 这个 option **默认开启**, 如果要关闭这个, 可以使用如下代码
+
+```dart
+IjkMediaController(needChangeSpeed: false); // 这个设置为false后, 则变速时会声音会变调的情况发生
 ```
 
 #### IjkStatus 说明
@@ -349,6 +379,8 @@ await controller.dispose(); //这个方法调用后,当前控制器理论上不�
 
 使用`IJKPlayer`的`controllerWidgetBuilder`属性可以自定义控制器的 UI,默认使用`defaultBuildIjkControllerWidget`方法构建
 
+签名如下: `typedef Widget IJKControllerWidgetBuilder(IjkMediaController controller);`
+
 返回的 Widget 会被覆盖在 Texture 上
 
 ```dart
@@ -359,6 +391,22 @@ IJKPlayer(
   },
 );
 ```
+
+内置的播放器 UI 使用的类为: `DefaultIJKControllerWidget`
+
+这个类提供了一些属性进行自定义, 除`controller`外所有属性均为可选:
+
+|               name                |            type            |      default      |                      desc                       |
+| :-------------------------------: | :------------------------: | :---------------: | :---------------------------------------------: |
+|           doubleTapPlay           |            bool            |       false       |                  双击播放暂停                   |
+|          verticalGesture          |            bool            |       true        |                    纵向手势                     |
+|         horizontalGesture         |            bool            |       true        |                    横向手势                     |
+|            volumeType             |         VolumeType         | VolumeType.system |        纵向手势改变的声音类型(系统,媒体)        |
+|        playWillPauseOther         |            bool            |       true        |            播放当前是否暂停其他媒体             |
+|      currentFullScreenState       |            bool            |       false       | **如果你是自定义全屏界面, 这个必须设置为 true** |
+|       showFullScreenButton        |            bool            |       true        |                是否显示全屏按钮                 |
+| fullscreenControllerWidgetBuilder | IJKControllerWidgetBuilder |                   |              可以自定义全屏的界面               |
+|          fullScreenType           |       FullScreenType       |                   |     全屏的类型(旋转屏幕,或是使用 RotateBox)     |
 
 ### 自定义纹理界面
 

@@ -15,29 +15,31 @@ Before using library, you can star and download the code to try the example.
 ## Menu
 
 - [ijkplayer](#ijkplayer)
-  - [Menu](#menu)
-  - [Install](#install)
-  - [Build](#build)
-    - [iOS](#ios)
-    - [Android](#android)
-  - [Simple Example](#simple-example)
-  - [Usage](#usage)
-    - [Usage of ijkplayer](#usage-of-ijkplayer)
+  - [Menu](#Menu)
+  - [Install](#Install)
+  - [Build](#Build)
+    - [Custom compile library](#Custom-compile-library)
+    - [iOS](#iOS)
+    - [Android](#Android)
+  - [Simple Example](#Simple-Example)
+  - [Usage](#Usage)
+    - [Usage of ijkplayer](#Usage-of-ijkplayer)
     - [about dispose](#about-dispose)
-    - [Usage of controller](#usage-of-controller)
-      - [DataSource](#datasource)
+    - [Usage of controller](#Usage-of-controller)
+      - [DataSource](#DataSource)
       - [control your media](#control-your-media)
       - [get media info](#get-media-info)
       - [screen shot](#screen-shot)
-      - [Observer for resource](#observer-for-resource)
-      - [IjkStatus](#ijkstatus)
-      - [Custom Options](#custom-options)
-        - [IjkOptionCategory](#ijkoptioncategory)
+      - [Observer for resource](#Observer-for-resource)
+      - [Media Speed](#Media-Speed)
+      - [IjkStatus](#IjkStatus)
+      - [Custom Options](#Custom-Options)
+        - [IjkOptionCategory](#IjkOptionCategory)
       - [release resource](#release-resource)
-    - [Use self controller UI](#use-self-controller-ui)
-    - [Build widget from IjkStatus](#build-widget-from-ijkstatus)
-    - [Use Texture widget](#use-texture-widget)
-  - [LICENSE](#license)
+    - [Use self controller UI](#Use-self-controller-UI)
+    - [Build widget from IjkStatus](#Build-widget-from-IjkStatus)
+    - [Use Texture widget](#Use-Texture-widget)
+  - [LICENSE](#LICENSE)
 
 ## Install
 
@@ -52,12 +54,16 @@ dependencies:
 
 ## Build
 
+### Custom compile library
+
 Current config file see [url](https://gitee.com/kikt/ijkplayer_thrid_party/blob/master/config/module.sh).
 
 For custom configuration options, refer to the [bibibili/ijkplayer](https://github.com/bilibili/ijkplayer) or [ffmpeg](http://ffmpeg.org/).
 
-Custom compilation options:
+Custom compilation source document:
 https://github.com/CaiJingLong/flutter_ijkplayer/blob/master/compile.md
+
+Because I edit some source, so you must see the compile.md to customize your library.
 
 ### iOS
 
@@ -70,7 +76,7 @@ On this basis, rotation notification is added.
 
 ### Android
 
-Now, use [GSYVideoPlayer](https://github.com/CarGuo/GSYVideoPlayer) `.so` library.
+Now, use compilation options in [GSYVideoPlayer](https://github.com/CarGuo/GSYVideoPlayer).
 
 ## Simple Example
 
@@ -174,6 +180,9 @@ controller.dispose();
 // network
 await controller.setNetworkDataSource("https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_20mb.mp4");
 
+// Custom headers for network source
+await controller.setNetworkDataSource(url, headers: <String,String>{});
+
 // asset
 await controller.setAssetDataSource("assets/test.mp4");
 
@@ -182,7 +191,7 @@ await controller.setFileDataSource(File("/sdcard/1.mp4"));
 
 // dataSource
 var dataSource = DataSource.file(File("/sdcard/1.mp4"));
-var dataSource = DataSource.network("https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_20mb.mp4");
+var dataSource = DataSource.network("https://www.sample-videos.com/video123/mp4/720/big_buck_bunny_720p_20mb.mp4", headers:<String,String>{});
 var dataSource = DataSource.asset("assets/test.mp4");
 await controller.setDataSource(dataSource);
 
@@ -234,6 +243,8 @@ var provider = MemoryImage(uint8List);
 Widget image = Image(image:provider);
 ```
 
+**This is not always the same as the video on display. This is because it intercepts the decoded full video frame, which may be 1-2 frames faster than the current play.** If you can't accept it, please don't use this feature or submit a viable PR.
+
 #### Observer for resource
 
 Broadcasting changes in information outward in the form of streams, in principle the attributes ending with streams are monitorable.
@@ -255,6 +266,22 @@ Stream<bool> volumeStream = controller.playingStream;
 // Detailed descriptions of specific states can be seen in the table below.
 Stream<IjkStatus> ijkStatusStream = controller.ijkStatusStream;
 
+```
+
+#### Media Speed
+
+code:
+
+```dart
+controller.setSpeed(2.0);
+```
+
+Default speed is 1.0, the min value need bigger than 0
+
+Because of the speed change, the tone will change. So you need to use an option to keep the tone unchanged. The option **default value is open**, and if you want to close it, use the code:
+
+```dart
+IjkMediaController(needChangeSpeed: false); // set needChangeSpeed to false, the tone will change on speed change.
 ```
 
 #### IjkStatus
@@ -324,6 +351,8 @@ await controller.dispose(); // After this method call, the current controller is
 
 Use `IJKPlayer`'s `controllerWidgetBuilder` params can customize UI, default use `defaultBuildIjkControllerWidget` method to get widget.
 
+The type def sign: `typedef Widget IJKControllerWidgetBuilder(IjkMediaController controller);`
+
 The returned widget will be overwritten on the `Texture`.
 
 ```dart
@@ -334,6 +363,22 @@ IJKPlayer(
   },
 );
 ```
+
+The library use `DefaultIJKControllerWidget` to build the widget.
+
+This class provides some properties for customization. All properties except `controller` are optional:
+
+|               name                |            type            |         default          |                                      desc                                      |
+| :-------------------------------: | :------------------------: | :----------------------: | :----------------------------------------------------------------------------: |
+|           doubleTapPlay           |            bool            |          false           |                            doubleTap gesture switch                            |
+|          verticalGesture          |            bool            |           true           |                            vertical gesture switch                             |
+|         horizontalGesture         |            bool            |           true           |                           horizontal gesture switch                            |
+|            volumeType             |         VolumeType         |    VolumeType.system     |           vertical gesture changes the type of sound (system,media)            |
+|        playWillPauseOther         |            bool            |           true           |                     play the video will pause other medias                     |
+|      currentFullScreenState       |            bool            |          false           | **If you are customizing the full screen interface, this must be set to true** |
+|       showFullScreenButton        |            bool            |           true           |                   Whether to display the full screen button                    |
+| fullscreenControllerWidgetBuilder | IJKControllerWidgetBuilder |                          |                    Can customize the full screen interface                     |
+|          fullScreenType           |       FullScreenType       | FullScreenType.rotateBox |               Full screen type (rotate screen, or use RotateBox)               |
 
 ### Build widget from IjkStatus
 

@@ -1,3 +1,52 @@
+## 0.3.1
+
+Update:
+
+- Use a new full screen type: Now, use `RotateBox` to rotate IjkPlayer.
+
+## 0.3.0
+
+Fix: [#91](https://github.com/CaiJingLong/flutter_ijkplayer/issues/91)
+
+- Fix: for android annotation @Nonnull
+
+## 0.2.9
+
+Fix: [#87](https://github.com/CaiJingLong/flutter_ijkplayer/issues/87)
+
+## 0.2.8+1
+
+Update pubspec and some Readme.
+
+## 0.2.8
+
+New feature:
+
+- Now, user can setSpeed.
+
+Fix:
+
+- About setDataSource and autoPlay.
+
+## 0.2.7
+
+Fix bug:
+
+- some m3u8 no sound.
+- some asset cannot play.
+
+## 0.2.6
+
+Fix bug:
+
+- Possible null pointer exceptions
+
+## 0.2.5
+
+Fix bug:
+
+Problems in `TabView`.
+
 ## 0.2.4
 
 fix bug:

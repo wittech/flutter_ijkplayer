@@ -12,11 +12,33 @@ class IjkMediaController
 
   Map<TargetPlatform, Set<IjkOption>> _options = {};
 
+  bool needChangeSpeed;
+
   /// MediaController
   IjkMediaController({
     this.autoRotate = true,
+    this.needChangeSpeed = true,
   }) {
     index = IjkMediaPlayerManager().add(this);
+    if (needChangeSpeed) {
+      setIjkPlayerOptions(
+          [
+            TargetPlatform.iOS,
+            TargetPlatform.android,
+          ],
+          <IjkOption>[
+            IjkOption(IjkOptionCategory.player, "soundtouch", 1),
+          ].toSet());
+    }
+  }
+
+  @override
+  set _ijkStatus(IjkStatus status) {
+    if (__ijkStatus == IjkStatus.disposed) {
+      dispose(false);
+      return;
+    }
+    super._ijkStatus = status;
   }
 
   /// create ijk texture id from native
@@ -30,6 +52,8 @@ class IjkMediaController
         var opt = _options[TargetPlatform.iOS] ?? Set();
         options.addAll(opt);
       }
+
+      print("options = $options");
 
       var id = await _createIjk(options: options);
       this.textureId = id;
@@ -45,22 +69,23 @@ class IjkMediaController
   }
 
   /// [reset] and close all controller
-  void dispose() async {
-    await reset();
-    await _disposeStream();
+  void dispose([changeStatus = true]) async {
+    _isDispose = true;
+    await reset(changeStatus);
+    await _disposeStream(changeStatus);
 
     IjkMediaPlayerManager().remove(this);
   }
 
   /// dispose all resource
-  Future<void> reset() async {
+  Future<void> reset([changeStatus = true]) async {
     volume = 100;
     this.textureId = null;
     _plugin?.dispose();
     _plugin = null;
     eventChannel?.dispose();
     eventChannel = null;
-    _ijkStatus = IjkStatus.noDatasource;
+    if (changeStatus) _ijkStatus = IjkStatus.noDatasource;
   }
 
   /// set net DataSource
@@ -72,13 +97,12 @@ class IjkMediaController
     bool autoPlay = false,
   }) async {
     _ijkStatus = IjkStatus.preparing;
-    await _initDataSource(() async {
-      await _plugin?.setNetworkDataSource(
-        uri: url,
-        headers: headers,
-      );
-      _ijkStatus = IjkStatus.prepared;
-    }, autoPlay);
+    await _initDataSource(autoPlay);
+    await _plugin?.setNetworkDataSource(
+      uri: url,
+      headers: headers,
+    );
+    _ijkStatus = IjkStatus.prepared;
   }
 
   /// set asset DataSource
@@ -90,10 +114,9 @@ class IjkMediaController
     bool autoPlay = false,
   }) async {
     _ijkStatus = IjkStatus.preparing;
-    await _initDataSource(() async {
-      await _plugin?.setAssetDataSource(name, package);
-      _ijkStatus = IjkStatus.prepared;
-    }, autoPlay);
+    await _initDataSource(autoPlay);
+    await _plugin?.setAssetDataSource(name, package);
+    _ijkStatus = IjkStatus.prepared;
   }
 
   /// set file DataSource
@@ -104,10 +127,9 @@ class IjkMediaController
     bool autoPlay = false,
   }) async {
     _ijkStatus = IjkStatus.preparing;
-    await _initDataSource(() async {
-      await _plugin?.setFileDataSource(file.absolute.path);
-      _ijkStatus = IjkStatus.prepared;
-    }, autoPlay);
+    await _initDataSource(autoPlay);
+    await _plugin?.setFileDataSource(file.absolute.path);
+    _ijkStatus = IjkStatus.prepared;
   }
 
   /// Set datasource with [DataSource]
@@ -140,24 +162,31 @@ class IjkMediaController
     }
   }
 
+  void setAutoPlay() {
+    this.addIjkPlayerOptions([
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    ], [
+      IjkOption(IjkOptionCategory.player, "start-on-prepared", 0),
+    ]);
+  }
+
   /// dispose last textureId resource
-  Future<void> _initDataSource(
-    Future setDataSource(),
-    bool autoPlay,
-  ) async {
+  Future<void> _initDataSource(bool autoPlay) async {
     autoPlay ??= false;
+
+    var autoPlayValue = autoPlay ? 1 : 0;
+    addIjkPlayerOptions([
+      TargetPlatform.android,
+      TargetPlatform.iOS,
+    ], [
+      IjkOption(IjkOptionCategory.player, "start-on-prepared", autoPlayValue),
+    ]);
 
     if (this.textureId != null) {
       await _plugin?.dispose();
     }
     await _initIjk();
-    Future playFuture = _autoPlay(autoPlay);
-    try {
-      await setDataSource();
-    } on Exception catch (e) {
-      print("init data error is ${e.toString()}");
-    }
-    return playFuture;
   }
 
   /// Play or pause according to your current status
@@ -229,15 +258,6 @@ class IjkMediaController
     }
   }
 
-  /// AutoPlay use
-  Future<void> _autoPlay(bool autoPlay) async {
-    if (autoPlay) {
-      await eventChannel?.autoPlay(this);
-    } else {
-      await eventChannel?.disableAutoPlay(this);
-    }
-  }
-
   /// set video volume
   Future<void> _setVolume(int volume) async {
     await _plugin?.setVolume(volume);
@@ -301,10 +321,10 @@ class IjkMediaController
   /// It will only take effect if you call [setDataSource] again.
   void setIjkPlayerOptions(
     List<TargetPlatform> platforms,
-    Set<IjkOption> options,
+    Iterable<IjkOption> options,
   ) {
     for (var platform in platforms) {
-      _options[platform] = options;
+      _options[platform] = options.toSet();
     }
   }
 
@@ -323,5 +343,9 @@ class IjkMediaController
       }
       opts.addAll(options);
     }
+  }
+
+  Future<void> setSpeed(double speed) async {
+    await _plugin.setSpeed(speed);
   }
 }

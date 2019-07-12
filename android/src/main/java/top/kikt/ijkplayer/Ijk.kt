@@ -3,9 +3,11 @@ package top.kikt.ijkplayer
 /// create 2019/3/7 by cai
 
 
+import android.content.Context
 import android.graphics.Bitmap
+import android.media.AudioManager
+import android.net.Uri
 import android.util.Base64
-import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
 import top.kikt.ijkplayer.entity.IjkOption
@@ -15,7 +17,7 @@ import tv.danmaku.ijk.media.player.TextureMediaPlayer
 import java.io.ByteArrayOutputStream
 import java.io.File
 
-class Ijk(private val registry: PluginRegistry.Registrar, val options: Map<String, Any>) : MethodChannel.MethodCallHandler {
+class Ijk(private val registry: PluginRegistry.Registrar, private val options: Map<String, Any>) {
 
     private val textureEntry = registry.textures().createSurfaceTexture()
     val id: Long
@@ -34,20 +36,102 @@ class Ijk(private val registry: PluginRegistry.Registrar, val options: Map<Strin
         textureMediaPlayer = TextureMediaPlayer(mediaPlayer)
         configOptions()
         textureMediaPlayer.surfaceTexture = textureEntry.surfaceTexture()
-        methodChannel.setMethodCallHandler(this)
+        methodChannel.setMethodCallHandler { call, result ->
+            when (call?.method) {
+                "setNetworkDataSource" -> {
+                    val uri = call.argument<String>("uri")
+                    val params = call.argument<Map<String, String>>("headers")
+                    if (uri == null) {
+                        handleSetUriResult(Exception("uri是必传参数"), result)
+                        return@setMethodCallHandler
+                    }
+                    setUri(uri, params) { throwable ->
+                        handleSetUriResult(throwable, result)
+                    }
+                }
+                "setAssetDataSource" -> {
+                    val name = call.argument<String>("name")
+                    val `package` = call.argument<String>("package")
+                    if (name != null) {
+                        setAssetUri(name, `package`) { throwable ->
+                            handleSetUriResult(throwable, result)
+                        }
+                    } else {
+                        handleSetUriResult(Exception("没有找到资源"), result)
+                    }
+                }
+                "setFileDataSource" -> {
+                    val path = call.argument<String>("path")
+                    if (path != null) {
+                        setUri("file://$path", hashMapOf()) { throwable ->
+                            handleSetUriResult(throwable, result)
+                        }
+                    }
+                }
+                "play" -> {
+                    play()
+                    result?.success(true)
+                }
+                "pause" -> {
+                    pause()
+                    result?.success(true)
+                }
+                "stop" -> {
+                    stop()
+                    result?.success(true)
+                }
+                "getInfo" -> {
+                    val info = getInfo()
+                    result?.success(info.toMap())
+                }
+                "seekTo" -> {
+                    val target = call.argument<Double>("target")
+                    if (target != null) {
+                        seekTo((target * 1000).toLong())
+                    }
+                    result?.success(true)
+                }
+                "setVolume" -> {
+                    val volume = call.argument<Int>("volume")
+                    setVolume(volume)
+                    result?.success(true)
+                }
+                "getVolume" -> {
+//                result?.success(this.mediaPlayer.setVolume())
+                }
+                "screenShot" -> {
+                    val bytes = screenShot()
+                    result?.success(bytes)
+                }
+                "setSpeed" -> {
+                    val speed = call.arguments<Double>()
+                    mediaPlayer.setSpeed(speed.toFloat())
+                }
+                else -> {
+                    result?.notImplemented()
+                }
+            }
+        }
     }
+
+    private val appContext: Context
+        get() = registry.activity().application
 
     private fun configOptions() {
         // see https://www.jianshu.com/p/843c86a9e9ad
         mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "fflags", "fastseek")
-        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100L)
-        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
-        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
-        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1L)
+
+        // 以下注释有选项会导致m3u8类型无声音
+//        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzemaxduration", 100L)
+//        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "analyzeduration", 1)
+//        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
+//        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "flush_packets", 1L)
+
         mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "reconnect", 5)
         mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 5)
         mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "enable-accurate-seek", 1)
         mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1) // 开硬解
+        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", 1)
 
         //        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "max-buffer-size", maxCacheSize)
         //        mediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "packet-buffering", if (isBufferCache) 1 else 0)
@@ -83,79 +167,6 @@ class Ijk(private val registry: PluginRegistry.Registrar, val options: Map<Strin
                     val ijkOptions = IjkOption(option)
                     setOptionToMediaPlayer(ijkOptions)
                 }
-            }
-        }
-    }
-
-    override fun onMethodCall(call: MethodCall?, result: MethodChannel.Result?) {
-        when (call?.method) {
-            "setNetworkDataSource" -> {
-                val uri = call.argument<String>("uri")
-                val params = call.argument<Map<String, String>>("headers")
-                if (uri == null) {
-                    handleSetUriResult(Exception("uri是必传参数"), result)
-                    return
-                }
-                setUri(uri, params) { throwable ->
-                    handleSetUriResult(throwable, result)
-                }
-            }
-            "setAssetDataSource" -> {
-                val name = call.argument<String>("name")
-                val `package` = call.argument<String>("package")
-                if (name != null) {
-                    setAssetUri(name, `package`) { throwable ->
-                        handleSetUriResult(throwable, result)
-                    }
-                } else {
-                    handleSetUriResult(Exception("没有找到资源"), result)
-                }
-            }
-            "setFileDataSource" -> {
-                val path = call.argument<String>("path")
-                if (path != null) {
-                    setUri("file://$path", hashMapOf()) { throwable ->
-                        handleSetUriResult(throwable, result)
-                    }
-                }
-            }
-            "play" -> {
-                play()
-                result?.success(true)
-            }
-            "pause" -> {
-                pause()
-                result?.success(true)
-            }
-            "stop" -> {
-                stop()
-                result?.success(true)
-            }
-            "getInfo" -> {
-                val info = getInfo()
-                result?.success(info.toMap())
-            }
-            "seekTo" -> {
-                val target = call.argument<Double>("target")
-                if (target != null) {
-                    seekTo((target * 1000).toLong())
-                }
-                result?.success(true)
-            }
-            "setVolume" -> {
-                val volume = call.argument<Int>("volume")
-                setVolume(volume)
-                result?.success(true)
-            }
-            "getVolume" -> {
-//                result?.success(this.mediaPlayer.setVolume())
-            }
-            "screenShot" -> {
-                val bytes = screenShot()
-                result?.success(bytes)
-            }
-            else -> {
-                result?.notImplemented()
             }
         }
     }
@@ -198,14 +209,22 @@ class Ijk(private val registry: PluginRegistry.Registrar, val options: Map<Strin
             result?.success(true)
         } else {
             throwable.printStackTrace()
-            result?.error("1", "设置资源失败", throwable)
+            result?.error("1", "set resource error", throwable)
         }
     }
 
-    private fun setUri(uri: String, headers: Map<String, String>?, callback: (Throwable?) -> Unit) {
+    private fun setUri(uriString: String, headers: Map<String, String>?, callback: (Throwable?) -> Unit) {
         try {
-//            mediaPlayer.dataSource = uri
-            mediaPlayer.setDataSource(uri, headers)
+            val uri = Uri.parse(uriString)
+//            val scheme = uri.scheme
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+//                    (TextUtils.isEmpty(scheme) || scheme.equals("file", ignoreCase = true))) {
+//                val dataSource = FileMediaDataSource(File(uri.toString()))
+//                mediaPlayer.setDataSource(dataSource)
+//            } else {
+            mediaPlayer.setDataSource(appContext, uri, headers)
+//            }
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC)
             mediaPlayer.prepareAsync()
             callback(null)
         } catch (e: Exception) {
@@ -226,14 +245,17 @@ class Ijk(private val registry: PluginRegistry.Registrar, val options: Map<Strin
                         registry.lookupKeyForAsset(name, `package`)
                     }
             val assetManager = registry.context().assets
-            val fd = assetManager.openFd(asset)
+            val input = assetManager.open(asset)
             val cacheDir = registry.context().cacheDir.absoluteFile.path
 
             val fileName = Base64.encodeToString(asset.toByteArray(), Base64.DEFAULT)
             val file = File(cacheDir, fileName)
-            fd.createInputStream().copyTo(file.outputStream())
-            mediaPlayer.dataSource = file.path
-//            ijkPlayer.setDataSource(fd.fileDescriptor) // can't use,
+            file.outputStream().use { outputStream ->
+                input.use { inputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            mediaPlayer.setDataSource(FileMediaDataSource(file))
             mediaPlayer.prepareAsync()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -242,11 +264,25 @@ class Ijk(private val registry: PluginRegistry.Registrar, val options: Map<Strin
     }
 
     fun dispose() {
-        notifyChannel.dispose()
-        methodChannel.setMethodCallHandler(null)
-        textureMediaPlayer.stop()
-        textureMediaPlayer.release()
-        textureEntry.release()
+        tryCatchError {
+            notifyChannel.dispose()
+            methodChannel.setMethodCallHandler(null)
+            textureMediaPlayer.stop()
+        }
+        tryCatchError {
+            textureMediaPlayer.release()
+        }
+        tryCatchError {
+            textureEntry.release()
+        }
+    }
+
+    private fun tryCatchError(runnable: () -> Unit) {
+        try {
+            runnable()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun play() {
