@@ -18,7 +18,7 @@ class IjkplayerPlugin(private val registrar: Registrar) : MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         IjkMediaPlayer.loadLibrariesOnce(null)
-        IjkMediaPlayer.native_profileBegin("libijkplayer.so")
+        IjkMediaPlayer.native_profileBegin("libijkplayer2.so")
         handleMethodCall(call, result)
     }
 

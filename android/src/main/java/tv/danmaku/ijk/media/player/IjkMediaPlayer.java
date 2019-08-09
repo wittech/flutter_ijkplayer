@@ -176,7 +176,7 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
      * Default library loader
      * Load them by yourself, if your libraries are not installed at default place.
      */
-    private static final IjkLibLoader sLocalLibLoader = new IjkLibLoader() {
+    private static final IjkLibLoader2 sLocalLibLoader = new IjkLibLoader2() {
         @Override
         public void loadLibrary(String libName) throws UnsatisfiedLinkError, SecurityException {
             System.loadLibrary(libName);
@@ -184,7 +184,7 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
     };
 
     private static volatile boolean mIsLibLoaded = false;
-    public static void loadLibrariesOnce(IjkLibLoader libLoader) {
+    public static void loadLibrariesOnce(IjkLibLoader2 libLoader) {
         synchronized (IjkMediaPlayer.class) {
             if (!mIsLibLoaded) {
                 if (libLoader == null)
@@ -226,11 +226,11 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
      * @param libLoader
      *              custom library loader, can be null.
      */
-    public IjkMediaPlayer(IjkLibLoader libLoader) {
+    public IjkMediaPlayer(IjkLibLoader2 libLoader) {
         initPlayer(libLoader);
     }
 
-    private void initPlayer(IjkLibLoader libLoader) {
+    private void initPlayer(IjkLibLoader2 libLoader) {
         loadLibrariesOnce(libLoader);
         initNativeOnce();
 
