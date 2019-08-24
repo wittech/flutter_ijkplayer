@@ -12,8 +12,8 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.PluginRegistry
 import top.kikt.ijkplayer.entity.IjkOption
 import top.kikt.ijkplayer.entity.Info
-import tv.danmaku.ijk.media.player.IjkMediaPlayer
-import tv.danmaku.ijk.media.player.TextureMediaPlayer
+import tv.danmaku.ijk.media.player2.IjkMediaPlayer
+import tv.danmaku.ijk.media.player2.TextureMediaPlayer
 import java.io.ByteArrayOutputStream
 import java.io.File
 
