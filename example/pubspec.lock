@@ -180,17 +180,21 @@ packages:
   photo:
     dependency: "direct main"
     description:
-      name: photo
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.3.4"
+      path: "."
+      ref: HEAD
+      resolved-ref: "5e19a93e63f92b5249b0ed9b2b5bde66b7104bf5"
+      url: "https://github.com/wittech/flutter_photo.git"
+    source: git
+    version: "0.3.4+1"
   photo_manager:
     dependency: transitive
     description:
-      name: photo_manager
-      url: "https://pub.flutter-io.cn"
-    source: hosted
-    version: "0.3.4"
+      path: "."
+      ref: HEAD
+      resolved-ref: c84af7240aab7f5e9be3951cb2a01e1f59da438d
+      url: "https://github.com/wittech/flutter_photo_manager.git"
+    source: git
+    version: "0.3.5"
   pub_semver:
     dependency: transitive
     description:
