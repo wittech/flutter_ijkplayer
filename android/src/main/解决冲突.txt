@@ -1,0 +1,29 @@
+
+一、第一步获取代码，并初始化：
+以下几句要先执行
+git clone https://github.com/Bilibili/ijkplayer.git ijkplayer-android
+cd ijkplayer-android
+git checkout -B latest k0.8.8
+
+./init-android.sh
+
+二、修改代码
+
+为了分别区分，直接将所有:
+tv.danmaku 替换成 av.danmaku
+tv_danmaku 替换成 av_danmaku
+class/tv/danmaku/ 替换成 class/av/danmaku/
+tv/danmaku 替换成 av/danmaku
+把wget    VERSION_URL="https://jcenter.bintray.com/tv/danmaku/ijk/media/ijkplayer-$PARAM_TARGET/$IJK_VERSION"
+换回来
+
+
+三、执行编译
+
+cd android/contrib
+
+./compile-ffmpeg.sh clean
+./compile-ffmpeg.sh armv5
+
+cd ..
+./compile-ijk.sh armv5
